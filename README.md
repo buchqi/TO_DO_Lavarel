@@ -1,136 +1,123 @@
-# Laravel TODO Task Manager
+# KIU Student Task & Activity Management System
 
 ## Project Overview
-This project is a Laravel-based task management web application developed for a university midterm project.  
-It demonstrates proper Laravel MVC architecture, CRUD functionality, database migrations, Eloquent ORM, Blade templating, and Bootstrap UI design.
 
-The application allows users to:
-- Create tasks
-- Read tasks
-- Update tasks
-- Delete tasks
-- Mark tasks as `Pending` or `Done`
-- Filter tasks by status (`All`, `Pending`, `Done`)
+This Laravel project extends the original TODO Task Manager into a university productivity portal for KIU students. Students can register, log in, and manage their own academic tasks, assignments, club activities, personal study items, KIU events, deadlines, tags, and optional file attachments.
 
-## Technologies Used
-- Laravel
-- PHP
-- MySQL
+The project keeps the original Laravel MVC structure and improves it with authentication, middleware protection, Eloquent relationships, file uploads, a JSON API endpoint, seed data, and a cleaner Bootstrap interface.
+
+## Technologies
+
+- Laravel 12
+- PHP 8.2+
+- MySQL or SQLite
 - Blade
-- Bootstrap
+- Bootstrap 5
 - Eloquent ORM
-- XAMPP
-
-## Installation Instructions
-Follow these steps to run the project locally.
-
-1. Clone the repository
-```bash
-git clone <your-repository-url>
-cd todo-task-manager
-```
-
-2. Install PHP dependencies
-```bash
-composer install
-```
-
-3. Configure environment file
-```bash
-cp .env.example .env
-php artisan key:generate
-```
-
-4. Create a MySQL database
-- Open phpMyAdmin (XAMPP) or MySQL client.
-- Create a new database (example: `todo_task_manager`).
-- Update database credentials in `.env`:
-  - `DB_DATABASE`
-  - `DB_USERNAME`
-  - `DB_PASSWORD`
-
-5. Run migrations
-```bash
-php artisan migrate
-```
-
-6. Seed sample data
-```bash
-php artisan db:seed
-```
-
-7. Start the development server
-```bash
-php artisan serve
-```
-
-Open in browser: `http://127.0.0.1:8000/tasks`
-
-### Quick Command List
-```bash
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-php artisan db:seed
-php artisan serve
-```
-
-## Seeder Information
-To populate the database with sample tasks for testing, run:
-
-```bash
-php artisan db:seed
-```
-
-This project includes `TaskSeeder` with sample `pending` and `done` tasks.
-
-## Project Structure
-The project follows Laravel MVC structure:
-
-- **Models**:  
-  `app/Models/Task.php`  
-  Handles task data and Eloquent configuration (`$fillable`, `$casts`).
-
-- **Controllers**:  
-  `app/Http/Controllers/TaskController.php`  
-  Handles business logic for CRUD, status updates, and filtering.
-
-- **Migrations**:  
-  `database/migrations/*create_tasks_table.php`  
-  Defines database schema for tasks (`title`, `description`, `status`, `deadline`).
-
-- **Blade Views**:  
-  `resources/views/layouts/app.blade.php`  
-  `resources/views/tasks/index.blade.php`  
-  `resources/views/tasks/create.blade.php`  
-  `resources/views/tasks/edit.blade.php`  
-  Provides layout and UI for listing, creating, and editing tasks.
+- Laravel validation, sessions, and middleware
 
 ## Features
-- Full task CRUD operations:
-  - Create new task
-  - View all tasks
-  - Edit existing task
-  - Delete task with confirmation
-- Status management:
-  - Mark task as `Pending` or `Done`
-- Task filtering:
-  - Filter by `All`, `Pending`, or `Done`
-- Validation:
-  - Server-side validation with user-friendly error messages
-- Flash messaging:
-  - Success messages after create/update/delete/status actions
-- UI:
-  - Clean Bootstrap layout using Blade `@extends` and `@section`
 
-## Future Improvements
-- Authentication (Login/Register)
-- Search functionality
-- Pagination
-- Enhanced AJAX interactions (for smoother filtering and partial UI updates)
+- Student registration, login, and logout
+- Auth-protected task management routes
+- Full task CRUD: create, read, update, delete
+- Task status toggle between `pending` and `done`
+- Filter tasks by `all`, `pending`, or `done`
+- One-to-many relationship: one User has many Tasks
+- Many-to-many relationship: Tasks have many Tags, Tags have many Tasks
+- Optional file uploads for PDF, JPG, PNG, DOC, and DOCX files
+- Attachment replacement and deletion cleanup
+- Public JSON API endpoint for sample task data
+- KIU-themed Bootstrap Blade UI
+- Flash messages and server-side validation errors
 
-## Academic Note
-This project was created as a structured foundation for future Laravel coursework and the final project.  
-The codebase is organized to support extension with advanced features in later phases.
+## Laravel Concepts Demonstrated
 
+- MVC architecture
+- Resource controllers
+- Eloquent models and relationships
+- One-to-many relationship: `User -> Task`
+- Many-to-many relationship: `Task <-> Tag`
+- CRUD operations
+- Blade layouts, sections, and partials
+- Form validation
+- Authentication
+- Route middleware
+- File uploads using Laravel storage
+- Database migrations and seeders
+- Basic JSON API route
+
+## Installation
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+```
+
+Configure your database in `.env`.
+
+Example MySQL settings:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=kiu_task_manager
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Run migrations and seed data:
+
+```bash
+php artisan migrate:fresh --seed
+php artisan storage:link
+php artisan serve
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000
+```
+
+## Seeded Test Account
+
+```text
+Email: student@kiu.edu.ge
+Password: password
+```
+
+## Routes and Pages to Test
+
+- `/login` - Login page
+- `/register` - Student registration page
+- `/dashboard` - Redirects logged-in users to tasks
+- `/tasks` - Auth-protected task list
+- `/tasks/create` - Create a task with tags and optional attachment
+- `/tasks/{task}/edit` - Edit a task
+- `/tasks/{task}/toggle` - Toggle status using a protected POST/PATCH form
+- `/api/tasks/public` - Public JSON endpoint with limited task fields
+
+## API Example
+
+```bash
+curl http://127.0.0.1:8000/api/tasks/public
+```
+
+The endpoint returns limited sample fields:
+
+- `id`
+- `title`
+- `status`
+- `deadline`
+- `tags`
+
+## Notes for Presentation
+
+- Guests can only access login/register pages.
+- Logged-in students can only see and manage their own tasks.
+- Tags are stored separately and connected through the `task_tag` pivot table.
+- Uploaded files are stored in `storage/app/public/tasks`.
+- Run `php artisan storage:link` so attachment links work from the browser.
