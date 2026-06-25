@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Group;
 use App\Models\Tag;
 use App\Models\Task;
 use Illuminate\Http\Request;
@@ -15,11 +16,12 @@ class TaskController extends Controller
     public function index()
     {
         $status = request('status', 'all');
-        $baseQuery = Task::where('user_id', auth()->id());
+        $groupIds = $this->accessibleGroupIds();
+        $baseQuery = $this->accessibleTaskQuery($groupIds);
 
         // Apply status filter only when a valid filter is selected.
-        $tasks = Task::with('tags')
-            ->where('user_id', auth()->id())
+        $tasks = $this->accessibleTaskQuery($groupIds)
+            ->with(['tags', 'group'])
             ->when(in_array($status, ['pending', 'done'], true), function ($query) use ($status) {
                 $query->where('status', $status);
             })
@@ -42,8 +44,9 @@ class TaskController extends Controller
     public function create()
     {
         $tags = Tag::orderBy('name')->get();
+        $groups = $this->availableGroups();
 
-        return view('tasks.create', compact('tags'));
+        return view('tasks.create', compact('tags', 'groups'));
     }
 
     /**
@@ -82,12 +85,13 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
-        $this->authorizeTaskOwner($task);
+        $this->authorizeTaskManager($task);
 
-        $task->load('tags');
+        $task->load(['tags', 'group']);
         $tags = Tag::orderBy('name')->get();
+        $groups = $this->availableGroups();
 
-        return view('tasks.edit', compact('task', 'tags'));
+        return view('tasks.edit', compact('task', 'tags', 'groups'));
     }
 
     /**
@@ -95,7 +99,7 @@ class TaskController extends Controller
      */
     public function update(Request $request, Task $task)
     {
-        $this->authorizeTaskOwner($task);
+        $this->authorizeTaskManager($task);
 
         // This branch handles quick status toggles from the list page.
         if ($request->boolean('quick_status')) {
@@ -138,7 +142,7 @@ class TaskController extends Controller
 
     public function toggle(Task $task)
     {
-        $this->authorizeTaskOwner($task);
+        $this->authorizeTaskManager($task);
 
         $task->update([
             'status' => $task->status === 'pending' ? 'done' : 'pending',
@@ -154,7 +158,7 @@ class TaskController extends Controller
      */
     public function destroy(Task $task)
     {
-        $this->authorizeTaskOwner($task);
+        $this->authorizeTaskManager($task);
         $this->deleteAttachment($task);
 
         $task->delete();
@@ -164,11 +168,12 @@ class TaskController extends Controller
 
     private function validatedTask(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:pending,done'],
             'deadline' => ['required', 'date'],
+            'group_id' => ['nullable', 'exists:groups,id'],
             'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['exists:tags,id'],
@@ -178,14 +183,31 @@ class TaskController extends Controller
             'status.in' => 'Status must be either pending or done.',
             'deadline.required' => 'Please choose a deadline date.',
             'deadline.date' => 'Deadline must be a valid date.',
+            'group_id.exists' => 'Please choose a valid group.',
             'attachment.mimes' => 'Attachment must be a PDF, image, or Word document.',
             'attachment.max' => 'Attachment must not be larger than 5MB.',
         ]);
+
+        if (! empty($validated['group_id']) && ! in_array((int) $validated['group_id'], $this->accessibleGroupIds(), true)) {
+            abort(403);
+        }
+
+        $validated['group_id'] = $validated['group_id'] ?: null;
+
+        return $validated;
     }
 
-    private function authorizeTaskOwner(Task $task): void
+    private function authorizeTaskManager(Task $task): void
     {
-        abort_unless($task->user_id === auth()->id(), 403);
+        $task->loadMissing('group');
+
+        $canManagePersonalTask = $task->group_id === null && $task->user_id === auth()->id();
+        $canAccessSharedGroup = $task->group_id !== null && $task->group?->hasMember(auth()->user());
+        $canManageSharedTask = $task->group_id !== null
+            && $canAccessSharedGroup
+            && ($task->user_id === auth()->id() || $task->group?->owner_id === auth()->id());
+
+        abort_unless($canManagePersonalTask || $canManageSharedTask, 403);
     }
 
     private function deleteAttachment(Task $task): void
@@ -193,5 +215,34 @@ class TaskController extends Controller
         if ($task->attachment_path && Storage::disk('public')->exists($task->attachment_path)) {
             Storage::disk('public')->delete($task->attachment_path);
         }
+    }
+
+    private function availableGroups()
+    {
+        return Group::query()
+            ->where('owner_id', auth()->id())
+            ->orWhereHas('users', fn ($query) => $query->where('users.id', auth()->id()))
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function accessibleGroupIds(): array
+    {
+        return $this->availableGroups()->pluck('id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    private function accessibleTaskQuery(array $groupIds)
+    {
+        return Task::query()
+            ->where(function ($query) use ($groupIds) {
+                $query->where(function ($personalQuery) {
+                    $personalQuery->where('user_id', auth()->id())
+                        ->whereNull('group_id');
+                });
+
+                if ($groupIds !== []) {
+                    $query->orWhereIn('group_id', $groupIds);
+                }
+            });
     }
 }

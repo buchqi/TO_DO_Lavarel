@@ -5,7 +5,7 @@
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
                 <h1 class="h3 mb-2">KIU Student Task & Activity Management System</h1>
-                <p class="mb-0">Track coursework, deadlines, student club activities, and KIU events in one place.</p>
+                <p class="mb-0">Track personal coursework and shared group activities in one place.</p>
             </div>
             <a href="{{ route('tasks.create') }}" class="btn btn-warning">Create Task</a>
         </div>
@@ -52,6 +52,7 @@
                 <thead>
                     <tr>
                         <th>Title</th>
+                        <th>Type</th>
                         <th>Status</th>
                         <th>Deadline</th>
                         <th>Tags</th>
@@ -63,7 +64,19 @@
                 <tbody>
                     @forelse ($tasks as $task)
                         <tr>
-                            <td class="fw-semibold">{{ $task->title }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ $task->title }}</div>
+                                @if ($task->group)
+                                    <span class="badge bg-info text-dark">{{ $task->group->name }}</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($task->group)
+                                    <span class="badge bg-primary">Shared</span>
+                                @else
+                                    <span class="badge bg-secondary">Personal</span>
+                                @endif
+                            </td>
                             <td>
                                 <span class="badge js-status-badge {{ $task->status === 'done' ? 'bg-success' : 'bg-warning text-dark' }}">
                                     {{ ucfirst($task->status) }}
@@ -86,31 +99,41 @@
                             </td>
                             <td>{{ $task->description ?: '-' }}</td>
                             <td class="text-end">
-                                <div class="d-inline-flex gap-2">
-                                    <form action="{{ route('tasks.toggle', $task) }}" method="POST">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="status_filter" value="{{ $status }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                            Mark {{ $task->status === 'pending' ? 'Done' : 'Pending' }}
-                                        </button>
-                                    </form>
-                                    <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form
-                                        action="{{ route('tasks.destroy', $task) }}"
-                                        method="POST"
-                                        onsubmit="return confirm('Are you sure you want to delete this task?');"
-                                    >
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
-                                </div>
+                                @php
+                                    $canManageTask = $task->group
+                                        ? ($task->user_id === auth()->id() || $task->group->owner_id === auth()->id())
+                                        : $task->user_id === auth()->id();
+                                @endphp
+
+                                @if ($canManageTask)
+                                    <div class="d-inline-flex gap-2">
+                                        <form action="{{ route('tasks.toggle', $task) }}" method="POST">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="status_filter" value="{{ $status }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                Mark {{ $task->status === 'pending' ? 'Done' : 'Pending' }}
+                                            </button>
+                                        </form>
+                                        <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <form
+                                            action="{{ route('tasks.destroy', $task) }}"
+                                            method="POST"
+                                            onsubmit="return confirm('Are you sure you want to delete this task?');"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                @else
+                                    <span class="text-muted small">View only</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-4">No tasks yet. Create your first KIU task.</td>
+                            <td colspan="8" class="text-center py-4">No tasks yet. Create your first KIU task.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -53,6 +53,7 @@
                 <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
                     @auth
                         <li class="nav-item"><a class="nav-link" href="{{ route('tasks.index') }}">Tasks</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ route('groups.index') }}">Groups</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ route('tasks.create') }}">Create Task</a></li>
                         <li class="nav-item text-white-50 small px-lg-2">{{ auth()->user()->name }}</li>
                         <li class="nav-item">

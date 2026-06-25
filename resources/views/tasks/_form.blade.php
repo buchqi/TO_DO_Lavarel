@@ -30,6 +30,22 @@
     @enderror
 </div>
 
+<div class="mb-3">
+    <label for="group_id" class="form-label">Group</label>
+    <select class="form-select @error('group_id') is-invalid @enderror" id="group_id" name="group_id">
+        <option value="">Personal task</option>
+        @foreach ($groups as $group)
+            <option value="{{ $group->id }}" {{ (int) old('group_id', $task->group_id ?? 0) === $group->id ? 'selected' : '' }}>
+                {{ $group->name }}
+            </option>
+        @endforeach
+    </select>
+    <div class="form-text">Choose a group only when this task should be shared with that team.</div>
+    @error('group_id')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
+
 <div class="row">
     <div class="col-md-6 mb-3">
         <label for="status" class="form-label">Status</label>

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Group;
 use App\Models\Task;
 use App\Models\Tag;
 use App\Models\User;
@@ -14,13 +15,49 @@ class TaskSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::firstOrCreate(
+        $student = User::firstOrCreate(
             ['email' => 'student@kiu.edu.ge'],
             [
                 'name' => 'KIU Student',
                 'password' => 'password',
             ]
         );
+
+        $teammate = User::firstOrCreate(
+            ['email' => 'teammate@kiu.edu.ge'],
+            [
+                'name' => 'Project Teammate',
+                'password' => 'password',
+            ]
+        );
+
+        $clubMember = User::firstOrCreate(
+            ['email' => 'club@kiu.edu.ge'],
+            [
+                'name' => 'Club Member',
+                'password' => 'password',
+            ]
+        );
+
+        $projectGroup = Group::firstOrCreate(
+            ['name' => 'Laravel Project Team', 'owner_id' => $student->id],
+            ['description' => 'Team for the KIU Laravel final project.']
+        );
+
+        $clubGroup = Group::firstOrCreate(
+            ['name' => 'KIU Student Club', 'owner_id' => $teammate->id],
+            ['description' => 'Planning student club activities and events.']
+        );
+
+        $projectGroup->users()->syncWithoutDetaching([
+            $teammate->id => ['role' => 'member'],
+            $clubMember->id => ['role' => 'member'],
+        ]);
+
+        $clubGroup->users()->syncWithoutDetaching([
+            $student->id => ['role' => 'member'],
+            $clubMember->id => ['role' => 'member'],
+        ]);
 
         $tasks = [
             [
@@ -29,6 +66,8 @@ class TaskSeeder extends Seeder
                 'status' => 'pending',
                 'deadline' => now()->addDays(2)->toDateString(),
                 'tags' => ['Assignment'],
+                'user_id' => $student->id,
+                'group_id' => null,
             ],
             [
                 'title' => 'Prepare slides for presentation',
@@ -36,6 +75,8 @@ class TaskSeeder extends Seeder
                 'status' => 'done',
                 'deadline' => now()->addDay()->toDateString(),
                 'tags' => ['Assignment', 'Exam'],
+                'user_id' => $student->id,
+                'group_id' => $projectGroup->id,
             ],
             [
                 'title' => 'Attend KIU student club meeting',
@@ -43,6 +84,8 @@ class TaskSeeder extends Seeder
                 'status' => 'pending',
                 'deadline' => now()->addDays(3)->toDateString(),
                 'tags' => ['Club', 'KIU Event'],
+                'user_id' => $teammate->id,
+                'group_id' => $clubGroup->id,
             ],
             [
                 'title' => 'Organize personal study plan',
@@ -50,6 +93,17 @@ class TaskSeeder extends Seeder
                 'status' => 'done',
                 'deadline' => now()->toDateString(),
                 'tags' => ['Personal'],
+                'user_id' => $student->id,
+                'group_id' => null,
+            ],
+            [
+                'title' => 'Review shared task permissions',
+                'description' => 'Confirm only creators and group owners can edit shared tasks.',
+                'status' => 'pending',
+                'deadline' => now()->addDays(4)->toDateString(),
+                'tags' => ['Assignment'],
+                'user_id' => $teammate->id,
+                'group_id' => $projectGroup->id,
             ],
         ];
 
@@ -59,7 +113,6 @@ class TaskSeeder extends Seeder
 
             $createdTask = Task::create([
                 ...$task,
-                'user_id' => $user->id,
             ]);
 
             $createdTask->tags()->sync(Tag::whereIn('name', $tagNames)->pluck('id'));
