@@ -8,6 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // This migration extends existing tasks so a task can optionally belong
+        // to a group. Null means the task remains personal.
         Schema::table('tasks', function (Blueprint $table) {
             $table->unsignedBigInteger('group_id')
                 ->nullable()
@@ -17,6 +19,7 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Removing group_id rolls back shared-task support from the tasks table.
         Schema::table('tasks', function (Blueprint $table) {
             $table->dropColumn('group_id');
         });

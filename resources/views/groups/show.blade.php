@@ -1,7 +1,12 @@
+{{-- GroupController@show renders this view for GET /groups/{group}.
+    It passes one $group with owner, users, and tasks eager-loaded. --}}
 @extends('layouts.app')
 
+{{-- The group detail page is inserted into the shared application layout. --}}
 @section('content')
     @php
+        // This value controls owner-only buttons in the UI.
+        // Controllers still enforce authorization because Blade checks are only presentation.
         $isOwner = $group->owner_id === auth()->id();
     @endphp
 
@@ -11,6 +16,7 @@
                 <h1 class="h3 mb-2">{{ $group->name }}</h1>
                 <p class="mb-0">{{ $group->description ?: 'No description provided.' }}</p>
             </div>
+            {{-- Only owners should see group editing controls. --}}
             @if ($isOwner)
                 <a href="{{ route('groups.edit', $group) }}" class="btn btn-warning">Edit Group</a>
             @endif
@@ -27,6 +33,8 @@
                     <p class="mb-2"><strong>Owner:</strong> {{ $group->owner->name }}</p>
 
                     <h3 class="h6 mt-4">Members</h3>
+                    {{-- $group->users is the belongsToMany relationship loaded
+                        from the group_user pivot table. --}}
                     @forelse ($group->users as $member)
                         <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2 gap-2">
                             <div>
@@ -34,6 +42,8 @@
                                 <div class="text-muted small">{{ $member->email }}</div>
                             </div>
                             @if ($isOwner)
+                                {{-- Removing a member sends DELETE to a custom route
+                                    that calls GroupController@removeMember. --}}
                                 <form action="{{ route('groups.members.destroy', [$group, $member]) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
@@ -53,6 +63,8 @@
                         <h2 class="h5 mb-0">Add Member</h2>
                     </div>
                     <div class="card-body">
+                        {{-- Adding a member posts an email address.
+                            The controller finds the User and attaches it through the pivot table. --}}
                         <form action="{{ route('groups.members.store', $group) }}" method="POST">
                             @csrf
                             <div class="mb-3">
@@ -87,8 +99,11 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {{-- Shared tasks come from the Group::tasks() hasMany relationship. --}}
                             @forelse ($group->tasks as $task)
                                 @php
+                                    // Owners can manage all shared tasks; creators can manage
+                                    // their own tasks. Other members remain view-only.
                                     $canManageTask = $task->user_id === auth()->id() || $isOwner;
                                 @endphp
                                 <tr>

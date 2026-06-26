@@ -11,12 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // The cache table stores cached values when the database cache driver is used.
+        // Laravel features can use this to avoid recalculating expensive data.
         Schema::create('cache', function (Blueprint $table) {
             $table->string('key')->primary();
             $table->mediumText('value');
             $table->integer('expiration')->index();
         });
 
+        // Cache locks let Laravel coordinate work so two processes do not run
+        // the same protected operation at the same time.
         Schema::create('cache_locks', function (Blueprint $table) {
             $table->string('key')->primary();
             $table->string('owner');
@@ -29,6 +33,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Rollback removes both cached values and cache lock records.
         Schema::dropIfExists('cache');
         Schema::dropIfExists('cache_locks');
     }

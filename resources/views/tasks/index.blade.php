@@ -1,5 +1,8 @@
+{{-- TaskController@index renders this view for GET /tasks.
+    It passes $tasks, $status, and $taskCounts after applying access rules. --}}
 @extends('layouts.app')
 
+{{-- This section becomes the task dashboard inside the shared layout. --}}
 @section('content')
     <div class="portal-header p-4 mb-4">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
@@ -41,6 +44,8 @@
     </div>
 
     <div class="d-flex gap-2 mb-3 flex-wrap">
+        {{-- These links send query parameters back to TaskController@index.
+            The controller uses request('status') to filter the Eloquent query. --}}
         <a href="{{ route('tasks.index') }}" class="btn btn-sm {{ $status === 'all' ? 'btn-primary' : 'btn-outline-primary' }}">All</a>
         <a href="{{ route('tasks.index', ['status' => 'pending']) }}" class="btn btn-sm {{ $status === 'pending' ? 'btn-warning text-dark' : 'btn-outline-warning' }}">Pending</a>
         <a href="{{ route('tasks.index', ['status' => 'done']) }}" class="btn btn-sm {{ $status === 'done' ? 'btn-success' : 'btn-outline-success' }}">Done</a>
@@ -62,10 +67,14 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {{-- @forelse is Blade's loop-with-empty-state helper.
+                        It displays task rows when data exists and a fallback row otherwise. --}}
                     @forelse ($tasks as $task)
                         <tr>
                             <td>
                                 <div class="fw-semibold">{{ $task->title }}</div>
+                                {{-- @if checks whether the optional belongsTo group
+                                    relationship exists before reading its name. --}}
                                 @if ($task->group)
                                     <span class="badge bg-info text-dark">{{ $task->group->name }}</span>
                                 @endif
@@ -100,6 +109,9 @@
                             <td>{{ $task->description ?: '-' }}</td>
                             <td class="text-end">
                                 @php
+                                    // This view-level check controls which buttons are shown.
+                                    // The controller still repeats authorization before changes,
+                                    // because hiding buttons alone is never enough security.
                                     $canManageTask = $task->group
                                         ? ($task->user_id === auth()->id() || $task->group->owner_id === auth()->id())
                                         : $task->user_id === auth()->id();
@@ -107,6 +119,8 @@
 
                                 @if ($canManageTask)
                                     <div class="d-inline-flex gap-2">
+                                        {{-- This small form sends PATCH to the custom
+                                            tasks.toggle route instead of editing the full task. --}}
                                         <form action="{{ route('tasks.toggle', $task) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
@@ -116,6 +130,8 @@
                                             </button>
                                         </form>
                                         <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        {{-- DELETE requests are simulated with @method('DELETE')
+                                            so Laravel resource routing reaches destroy(). --}}
                                         <form
                                             action="{{ route('tasks.destroy', $task) }}"
                                             method="POST"

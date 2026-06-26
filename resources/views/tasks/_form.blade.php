@@ -1,9 +1,15 @@
+{{-- This partial is included by task create/edit views.
+    $tags and $groups come from TaskController; $task exists only on edit. --}}
 @php
+    // This prepares selected tag ids from old input after validation failure
+    // or from the existing task when editing.
     $selectedTags = collect(old('tags', isset($task) ? $task->tags->pluck('id')->all() : []))->map(fn ($id) => (int) $id)->all();
 @endphp
 
 <div class="mb-3">
     <label for="title" class="form-label">Title</label>
+    {{-- old() keeps user input after validation fails; the fallback fills
+        existing model data on edit. @error reads Laravel's validation bag. --}}
     <input
         type="text"
         class="form-control @error('title') is-invalid @enderror"
@@ -34,6 +40,8 @@
     <label for="group_id" class="form-label">Group</label>
     <select class="form-select @error('group_id') is-invalid @enderror" id="group_id" name="group_id">
         <option value="">Personal task</option>
+        {{-- @foreach loops through Eloquent Group models passed by the controller.
+            Choosing a group sets tasks.group_id and makes the task shared. --}}
         @foreach ($groups as $group)
             <option value="{{ $group->id }}" {{ (int) old('group_id', $task->group_id ?? 0) === $group->id ? 'selected' : '' }}>
                 {{ $group->name }}
@@ -77,6 +85,8 @@
 <div class="mb-3">
     <label class="form-label">Tags</label>
     <div class="row g-2">
+        {{-- Each checkbox represents a many-to-many Tag relationship.
+            The controller saves selected ids with $task->tags()->sync(). --}}
         @foreach ($tags as $tag)
             <div class="col-sm-6 col-lg-4">
                 <div class="form-check border rounded p-2 ps-5 bg-light">
@@ -103,6 +113,8 @@
 
 <div class="mb-4">
     <label for="attachment" class="form-label">Attachment</label>
+    {{-- File inputs are handled by Laravel as UploadedFile objects.
+        TaskController validates type/size and stores the file on the public disk. --}}
     <input
         type="file"
         class="form-control @error('attachment') is-invalid @enderror"
@@ -115,6 +127,8 @@
         <div class="invalid-feedback">{{ $message }}</div>
     @enderror
 
+    {{-- @if prevents this edit-only link from appearing on create.
+        The saved database value is a path, and asset('storage/...') builds a public URL. --}}
     @if (isset($task) && $task->attachment_path)
         <div class="mt-2">
             <a href="{{ asset('storage/'.$task->attachment_path) }}" target="_blank">View current attachment</a>

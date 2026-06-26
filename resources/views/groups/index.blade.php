@@ -1,5 +1,8 @@
+{{-- GroupController@index renders this view for GET /groups.
+    It passes $ownedGroups and $memberGroups from authenticated-user relationships. --}}
 @extends('layouts.app')
 
+{{-- This section fills the main content area in layouts.app. --}}
 @section('content')
     <div class="portal-header p-4 mb-4">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
@@ -18,6 +21,8 @@
                     <h2 class="h5 mb-0">Groups You Own</h2>
                 </div>
                 <div class="card-body">
+                    {{-- @forelse loops through owned groups and also provides an
+                        empty message for users who have not created any groups. --}}
                     @forelse ($ownedGroups as $group)
                         <div class="border rounded p-3 mb-3">
                             <div class="d-flex justify-content-between gap-3">
@@ -44,6 +49,8 @@
                     <h2 class="h5 mb-0">Groups You Joined</h2>
                 </div>
                 <div class="card-body">
+                    {{-- These groups come from the User::groups() belongsToMany
+                        relationship through the group_user pivot table. --}}
                     @forelse ($memberGroups as $group)
                         <div class="border rounded p-3 mb-3">
                             <h3 class="h6 mb-1">

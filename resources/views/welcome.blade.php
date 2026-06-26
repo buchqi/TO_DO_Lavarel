@@ -1,3 +1,6 @@
+{{-- This is Laravel's default welcome view.
+    The custom application currently redirects "/" in routes/web.php, so this
+    file is mostly framework starter code rather than part of the task workflow. --}}
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>

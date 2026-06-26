@@ -1,5 +1,8 @@
+{{-- RegisterController@create renders this view for GET /register.
+    The submitted form is handled by RegisterController@store. --}}
 @extends('layouts.app')
 
+{{-- This section becomes the main page content inside the shared layout. --}}
 @section('content')
     <div class="row justify-content-center">
         <div class="col-lg-6">
@@ -10,6 +13,8 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
+                    {{-- Registration uses POST because it creates a users table row
+                        and starts an authenticated session after success. --}}
                     <form action="{{ route('register.store') }}" method="POST">
                         @csrf
 
@@ -39,6 +44,8 @@
 
                         <div class="mb-4">
                             <label for="password_confirmation" class="form-label">Confirm Password</label>
+                            {{-- Laravel's confirmed validation rule expects this
+                                exact password_confirmation field name. --}}
                             <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required>
                         </div>
 

@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // The jobs table stores queued background jobs when the database queue
+        // driver is used. This app is small, but Laravel includes the table
+        // so work can be moved out of web requests later.
         Schema::create('jobs', function (Blueprint $table) {
             $table->id();
             $table->string('queue')->index();
@@ -21,6 +24,8 @@ return new class extends Migration
             $table->unsignedInteger('created_at');
         });
 
+        // Job batches group multiple queued jobs together so Laravel can track
+        // progress, failures, and completion callbacks.
         Schema::create('job_batches', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->string('name');
@@ -34,6 +39,8 @@ return new class extends Migration
             $table->integer('finished_at')->nullable();
         });
 
+        // Failed jobs are kept for debugging. If a queued task crashes, Laravel
+        // can record the connection, queue, payload, and exception here.
         Schema::create('failed_jobs', function (Blueprint $table) {
             $table->id();
             $table->string('uuid')->unique();
@@ -50,6 +57,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Rollback removes queue infrastructure tables.
         Schema::dropIfExists('jobs');
         Schema::dropIfExists('job_batches');
         Schema::dropIfExists('failed_jobs');

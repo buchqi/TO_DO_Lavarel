@@ -1,5 +1,8 @@
+{{-- GroupController@edit renders this view for GET /groups/{group}/edit.
+    Only the owner reaches it because the controller checks authorization. --}}
 @extends('layouts.app')
 
+{{-- The layout renders this block at @yield('content'). --}}
 @section('content')
     <div class="portal-header p-4 mb-4">
         <h1 class="h3 mb-1">Edit Group</h1>
@@ -10,12 +13,16 @@
         <div class="col-lg-8">
             <div class="card shadow-sm border-0">
                 <div class="card-body">
+                    {{-- The form updates an existing Group. @method('PUT') lets
+                        Laravel resource routing call GroupController@update. --}}
                     <form action="{{ route('groups.update', $group) }}" method="POST">
                         @csrf
                         @method('PUT')
 
                         <div class="mb-3">
                             <label for="name" class="form-label">Name</label>
+                            {{-- The old() fallback displays the current Eloquent
+                                model value on first load and submitted input after errors. --}}
                             <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $group->name) }}" required>
                             @error('name')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -38,6 +45,8 @@
                         </div>
                     </form>
 
+                    {{-- Deleting a resource uses a separate form so it can send
+                        DELETE and reach GroupController@destroy. --}}
                     <form action="{{ route('groups.destroy', $group) }}" method="POST" class="mt-3" onsubmit="return confirm('Delete this group? Shared tasks will become personal to their creators.');">
                         @csrf
                         @method('DELETE')

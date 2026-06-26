@@ -40,8 +40,13 @@
     </style>
 </head>
 <body>
+    {{-- This layout is the shared page shell for most Blade views.
+        Child views use @extends('layouts.app') so navigation, alerts, CSS,
+        and the main container are not duplicated in every file. --}}
     <nav class="navbar navbar-expand-lg navbar-dark kiu-navbar mb-4">
         <div class="container">
+            {{-- auth()->check() reads Laravel's session-backed authentication state.
+                Guests go to login, while signed-in users return to their tasks. --}}
             <a class="navbar-brand d-flex align-items-center gap-2" href="{{ auth()->check() ? route('tasks.index') : route('login') }}">
                 <span class="kiu-brand-mark">KIU</span>
                 <span>Student Task & Activity Management</span>
@@ -51,12 +56,16 @@
             </button>
             <div class="collapse navbar-collapse" id="mainNavbar">
                 <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                    {{-- @auth is Blade's shortcut for checking whether the current
+                        request has an authenticated user in the session. --}}
                     @auth
                         <li class="nav-item"><a class="nav-link" href="{{ route('tasks.index') }}">Tasks</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ route('groups.index') }}">Groups</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ route('tasks.create') }}">Create Task</a></li>
                         <li class="nav-item text-white-50 small px-lg-2">{{ auth()->user()->name }}</li>
                         <li class="nav-item">
+                            {{-- Logout is a POST form because it changes session state.
+                                @csrf inserts a token Laravel verifies before accepting it. --}}
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
                                 <button class="btn btn-sm btn-warning" type="submit">Logout</button>
@@ -72,10 +81,15 @@
     </nav>
 
     <main class="container pb-5">
+        {{-- Flash messages and validation errors are included once here so every
+            controller redirect can give feedback on any page. --}}
         @include('components.alerts')
+        {{-- @yield('content') is where child views inject their main page body
+            with @section('content'). This is Blade template inheritance. --}}
         @yield('content')
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {{-- Child views can define @section('scripts') only when they need page-specific JavaScript. --}}
     @yield('scripts')
 </body>
 </html>

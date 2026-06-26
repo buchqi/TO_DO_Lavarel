@@ -14,6 +14,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // DatabaseSeeder is the entry point for php artisan db:seed.
+        // It calls smaller seeders in the correct order so tags exist before
+        // tasks try to attach them through the task_tag pivot table.
         $this->call([
             TagSeeder::class,
             TaskSeeder::class,

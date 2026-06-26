@@ -15,6 +15,9 @@ class TaskSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seeders create realistic data for development and demonstrations.
+        // These users allow authentication, group ownership, and membership
+        // scenarios to be tested without manual database entry.
         $student = User::firstOrCreate(
             ['email' => 'student@kiu.edu.ge'],
             [
@@ -39,6 +42,8 @@ class TaskSeeder extends Seeder
             ]
         );
 
+        // Groups are created with owner_id so the authorization rules can be
+        // demonstrated: owners manage groups, members collaborate inside them.
         $projectGroup = Group::firstOrCreate(
             ['name' => 'Laravel Project Team', 'owner_id' => $student->id],
             ['description' => 'Team for the KIU Laravel final project.']
@@ -49,6 +54,8 @@ class TaskSeeder extends Seeder
             ['description' => 'Planning student club activities and events.']
         );
 
+        // syncWithoutDetaching adds many-to-many membership rows without
+        // removing existing members. The array values become pivot data.
         $projectGroup->users()->syncWithoutDetaching([
             $teammate->id => ['role' => 'member'],
             $clubMember->id => ['role' => 'member'],
@@ -59,6 +66,8 @@ class TaskSeeder extends Seeder
             $clubMember->id => ['role' => 'member'],
         ]);
 
+        // The task array mixes personal tasks and group tasks so the UI can
+        // show both ownership paths during demos.
         $tasks = [
             [
                 'title' => 'Finish Laravel TODO assignment report',
@@ -107,6 +116,8 @@ class TaskSeeder extends Seeder
             ],
         ];
 
+        // Each task is created first, then its tag names are translated into
+        // tag ids and written to the task_tag pivot table with sync().
         foreach ($tasks as $task) {
             $tagNames = $task['tags'];
             unset($task['tags']);
