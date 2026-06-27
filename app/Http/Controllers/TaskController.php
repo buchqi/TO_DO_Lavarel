@@ -188,7 +188,7 @@ class TaskController extends Controller
         // Called by PATCH /tasks/{task}/toggle from a small Blade form.
         // It receives only the task id through route model binding, flips the
         // status, and redirects back to the task list.
-        $this->authorizeTaskManager($task);
+        $this->authorizeTaskToggler($task);
 
         $task->update([
             'status' => $task->status === 'pending' ? 'done' : 'pending',
@@ -256,7 +256,9 @@ class TaskController extends Controller
     private function authorizeTaskManager(Task $task): void
     {
         // This method is a controller-level authorization gate.
-        // It exists so edit, update, toggle, and delete all enforce the same rule.
+        // It exists so edit, update, and delete all enforce the same rule.
+        // Managing a task means changing its details or removing it entirely,
+        // so invited group members are intentionally excluded from this permission.
         $task->loadMissing('group');
 
         // Personal tasks may be managed only by their creator.
@@ -272,6 +274,27 @@ class TaskController extends Controller
         // abort_unless throws a 403 HTTP response. If this line were removed,
         // users could edit or delete tasks they do not own.
         abort_unless($canManagePersonalTask || $canManageSharedTask, 403);
+    }
+
+    private function authorizeTaskToggler(Task $task): void
+    {
+        // Toggling is intentionally less powerful than managing.
+        // A group member who participates in shared work may mark a task pending/done,
+        // but that does not mean they can edit the title, deadline, tags, or delete it.
+        $task->loadMissing('group');
+
+        // Personal tasks are private, so only the creator can change their status.
+        $canTogglePersonalTask = $task->group_id === null && $task->user_id === auth()->id();
+
+        // Shared tasks are collaborative: the creator, group owner, and invited
+        // members may all participate by updating status through the toggle route.
+        $canToggleSharedTask = $task->group_id !== null
+            && $task->group !== null
+            && ($task->user_id === auth()->id() || $task->group->hasMember(auth()->user()));
+
+        // If this guard were removed, unrelated users could guess task ids and
+        // mark other people's tasks pending/done.
+        abort_unless($canTogglePersonalTask || $canToggleSharedTask, 403);
     }
 
     private function deleteAttachment(Task $task): void

@@ -109,15 +109,22 @@
                             <td>{{ $task->description ?: '-' }}</td>
                             <td class="text-end">
                                 @php
-                                    // This view-level check controls which buttons are shown.
+                                    // This view-level check controls which edit/delete buttons are shown.
                                     // The controller still repeats authorization before changes,
                                     // because hiding buttons alone is never enough security.
+                                    // Managing a task means editing its details or deleting it.
+                                    // Participating in a shared task is narrower: group members
+                                    // may only mark it pending/done.
                                     $canManageTask = $task->group
                                         ? ($task->user_id === auth()->id() || $task->group->owner_id === auth()->id())
                                         : $task->user_id === auth()->id();
+
+                                    $canToggleTask = $task->group
+                                        ? ($task->user_id === auth()->id() || $task->group->hasMember(auth()->user()))
+                                        : $task->user_id === auth()->id();
                                 @endphp
 
-                                @if ($canManageTask)
+                                @if ($canToggleTask)
                                     <div class="d-inline-flex gap-2">
                                         {{-- This small form sends PATCH to the custom
                                             tasks.toggle route instead of editing the full task. --}}
@@ -129,18 +136,21 @@
                                                 Mark {{ $task->status === 'pending' ? 'Done' : 'Pending' }}
                                             </button>
                                         </form>
-                                        <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                        {{-- DELETE requests are simulated with @method('DELETE')
-                                            so Laravel resource routing reaches destroy(). --}}
-                                        <form
-                                            action="{{ route('tasks.destroy', $task) }}"
-                                            method="POST"
-                                            onsubmit="return confirm('Are you sure you want to delete this task?');"
-                                        >
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                        </form>
+
+                                        @if ($canManageTask)
+                                            <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            {{-- DELETE requests are simulated with @method('DELETE')
+                                                so Laravel resource routing reaches destroy(). --}}
+                                            <form
+                                                action="{{ route('tasks.destroy', $task) }}"
+                                                method="POST"
+                                                onsubmit="return confirm('Are you sure you want to delete this task?');"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                            </form>
+                                        @endif
                                     </div>
                                 @else
                                     <span class="text-muted small">View only</span>

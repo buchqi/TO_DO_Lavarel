@@ -103,8 +103,10 @@
                             @forelse ($group->tasks as $task)
                                 @php
                                     // Owners can manage all shared tasks; creators can manage
-                                    // their own tasks. Other members remain view-only.
+                                    // their own tasks. Invited members can participate by
+                                    // toggling status, but they still cannot edit/delete details.
                                     $canManageTask = $task->user_id === auth()->id() || $isOwner;
+                                    $canToggleTask = $canManageTask || $group->hasMember(auth()->user());
                                 @endphp
                                 <tr>
                                     <td>{{ $task->title }}</td>
@@ -116,8 +118,21 @@
                                     <td>{{ $task->deadline->format('Y-m-d') }}</td>
                                     <td>{{ $task->user->name }}</td>
                                     <td class="text-end">
-                                        @if ($canManageTask)
-                                            <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        @if ($canToggleTask)
+                                            <div class="d-inline-flex gap-2">
+                                                <form action="{{ route('tasks.toggle', $task) }}" method="POST">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="status_filter" value="all">
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                        Mark {{ $task->status === 'pending' ? 'Done' : 'Pending' }}
+                                                    </button>
+                                                </form>
+
+                                                @if ($canManageTask)
+                                                    <a href="{{ route('tasks.edit', $task) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                @endif
+                                            </div>
                                         @else
                                             <span class="text-muted small">View only</span>
                                         @endif
